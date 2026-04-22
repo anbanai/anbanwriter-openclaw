@@ -1,0 +1,19 @@
+{
+  "name": "anbanwriter-openclaw",
+  "version": "2.4.0",
+  "description": "WeChat & Xiaohongshu AI content creation suite for OpenClaw",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.3.22"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.0"
+  }
+}
