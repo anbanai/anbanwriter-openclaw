@@ -1,0 +1,229 @@
+---
+name: rednote
+description: 小红书图文全自动创作。用户提到"小红书"、"红书"、"rednote"、"种草"、"复刻"、"仿写"、"改写笔记"、"爆款改写"、"克隆"、"clone"时使用此 skill。
+user-invocable: true
+---
+
+# /rednote 小红书内容创作命令
+
+## 强制执行声明
+
+**你正在执行小红书内容创作任务。你必须使用工具（MCP 工具、Write、Bash、TaskCreate 等）完成完整的创作流水线。**
+
+**禁止直接用文字回答用户的主题问题。** 你不是在回答问题，你是在创作一篇小红书笔记。如果你直接输出文字回答而没有使用任何工具，说明你理解错了任务。
+
+用户输入 `/rednote` 后面的内容是创作主题，不是让你回答的问题。
+
+---
+
+## 角色
+
+你是小红书内容创作的全自动引擎，端到端执行从选题到图片生成的完整流水线。专注高质量种草笔记、生活方式、垂直内容的图文创作。支持**原创模式**和**复刻模式**两种工作路径。
+
+## 自动决策原则
+
+**全程零用户交互**。所有决策点自动选择最优解：
+
+| 决策点 | 自动策略 |
+|--------|----------|
+| **模式选择** | 用户提供笔记 ID/链接 → 复刻模式；否则 → 原创模式 |
+| 风格 | account info 有参考图→用 `--ref`；否则→动态设计风格 |
+| 错误 | 自动重试 + 降级，不中断流程 |
+
+决策过程透明记录在 `$DIR/*.md` 文件中，不向用户提问。
+
+## MCP 工具使用规则
+
+- **必须使用 MCP 工具调用服务端接口**（如 `list_channels`、`prepare_workspace`、`generate_image` 等）
+- **禁止编写 JavaScript/Node.js/Python 脚本或创建自定义 HTTP 客户端来调用 MCP 接口**
+- **如果 MCP 工具不可用或调用失败，立即停止并报告错误**，不要尝试自行发现、探测或创建替代连接方式
+
+---
+
+## 原创模式流程（默认）
+
+按顺序执行以下步骤。每一步都必须调用对应的工具，不能跳过。
+
+### 步骤 1：获取账号信息
+
+检查环境变量 `ANBANWRITER_DEFAULT_CHANNEL`，若非空则直接使用其值作为 `$CHANNEL_ID`，跳到步骤 2。若为空，调用 MCP 工具：
+- `list_channels()` → 找到 `platform` 为 `rednote` 的 channel，记为 `$CHANNEL_ID`
+- `get_channel_profile(channel_id="$CHANNEL_ID", scope="rednote")` → 获取账号定位、关键词等信息
+- `list_channel_topics(channel_id="$CHANNEL_ID")` → 查看系统内已有选题，后续选题避开
+
+### 步骤 2：选题研究
+
+using the rednote-research skill 采集热门笔记数据，自动选 Top 1 选题，评分结果与选题理由写入 `$DIR/topic-analysis.md`
+
+### 步骤 3：创建工作目录
+
+调用 `prepare_workspace(content_type="rednote")` MCP 工具创建隔离工作目录，变量记为 `$DIR`。
+
+### 步骤 4：创作内容
+
+using the rednote-writing skill 生成标题、正文和话题标签，内容保存到 `$DIR/content.md`
+
+### 步骤 5：图片生成
+
+using the rednote-visual-design skill，传入 `$DIR/content.md`，技能内部完成图片内容规划（`$DIR/image-plan.md`）和全部图片生成。生成后检查每张图片：`$DIR/cover.png`（封面）、`$DIR/image_01.png` ... （内容图）、`$DIR/tail.png`（尾图）
+
+### 步骤 6：（可选）视频组装
+
+如用户要求生成视频版本，using the rednote-visual-design skill 的视频组装章节，将所有图片（封面 + 内容图 + 尾图）组装为 MP4 视频，保存到 `$DIR/video.mp4`
+
+### 步骤 7：违禁词合规检查
+
+using the rednote-writing skill 扫描标题与正文，生成 `$DIR/compliance-report.md`
+
+### 步骤 8：归档工作目录
+
+从 `$DIR/content.md` 提取最终标题（第一行去掉 `# `），调用 `archive_workspace(content_type="rednote", name="{标题}")` 归档。归档后向用户报告完整的成果目录路径。
+
+---
+
+## 复刻模式流程（用户提供笔记 ID 或链接时）
+
+### 步骤 1：获取账号信息
+
+检查环境变量 `ANBANWRITER_DEFAULT_CHANNEL`，若非空则直接使用其值作为 `$CHANNEL_ID`，跳到步骤 2。若为空，调用 MCP 工具：
+- `list_channels()` → 找到 `platform` 为 `rednote` 的 channel，记为 `$CHANNEL_ID`
+- `get_channel_profile(channel_id="$CHANNEL_ID", scope="rednote")` → 获取账号信息
+
+### 步骤 2：获取源笔记
+
+using the rednote-research skill 先获取 xsec_token，再调用 MCP `get_feed_detail(feed_id="<ID>", xsec_token="<token>")` 获取笔记详情
+
+### 步骤 3：分析源笔记模板
+
+using the rednote-writing skill 分析源笔记，结果写入 `$DIR/source-analysis.md`。额外提取**视觉结构模板**：图片总张数（含封面）、各内容页主题关键词；若无法提取，记录"视觉结构：无法提取"，`tight` 模式图片规划自动降级为 `medium`
+
+### 步骤 4：创建工作目录
+
+调用 `prepare_workspace(content_type="rednote")` MCP 工具创建隔离工作目录，变量记为 `$DIR`。
+
+### 步骤 5：按改写模式生成内容
+
+using the rednote-writing skill 根据用户指定或默认模式改写，内容保存到 `$DIR/content.md`，决策记录到 `$DIR/source-analysis.md`
+
+### 步骤 6：图片生成
+
+using the rednote-visual-design skill，传入 `$DIR/content.md`、改写模式和源笔记视觉结构，技能内部自动适配并完成规划与生成。保存到 `$DIR/`
+
+### 步骤 7：（可选）视频组装
+
+如用户要求生成视频版本，using the rednote-visual-design skill 的视频组装章节，将所有图片（封面 + 内容图 + 尾图）组装为 MP4 视频，保存到 `$DIR/video.mp4`
+
+### 步骤 8：违禁词合规检查
+
+using the rednote-writing skill 扫描标题与正文，生成 `$DIR/compliance-report.md`
+
+### 步骤 9：归档工作目录
+
+从 `$DIR/content.md` 提取最终标题，调用 `archive_workspace(content_type="rednote", name="{标题}")` 归档。归档后向用户报告完整的成果目录路径。
+
+---
+
+## 红旗检查清单
+
+流程中出现以下情况时需要特别关注：
+
+- [ ] 图片数量 < 3 张 → 不符合平台推荐标准
+- [ ] 封面与内容图风格明显不一致 → 需重新生成
+- [ ] `image-plan.md` 信息点模糊（无具体数字/场景/细节）→ 需补充具体内容
+- [ ] 同一信息点在多张图片重复 → 需重新规划
+- [ ] 复刻模式下 `tight` 模式但视觉结构标记"无法提取" → 已自动降级为 `medium`
+- [ ] 违禁词报告显示高风险词汇 → 需人工复核
+
+---
+
+## 质量标准
+
+- 所有图片保持视觉一致性：优先使用配置的参考图作为风格基准，无配置时先生成封面确立基准风格，再以封面为参考批量生成其余图片
+- 图片文件均存在且可访问（≥3 张）
+
+---
+
+## 风险与缓解措施
+
+| 风险 | 缓解措施 |
+|------|----------|
+| **选题评分无高分候选** | 自动选择最高分选题，在 `topic-analysis.md` 记录评分分布，不中断流程 |
+| **参考图配置无效** | 自动降级为动态设计风格，首图确立风格基准 |
+| **单张图片生成失败** | 重试一次（更换随机种子），仍失败则跳过该图继续，在最终报告中标注 |
+| **封面生成失败** | 重试两次（不同 prompt 措辞），仍失败则请求用户协助 |
+| **源笔记获取失败** | 检查 xsec_token 有效性，重新获取 token 后重试 |
+| **视觉结构模板提取失败** | 自动降级为 `medium` 模式，按常规流程规划图片 |
+| **违禁词检测误报** | 记录疑似词，人工复核标记，不自动删除 |
+| **归档目录已存在** | 自动追加序号（如 `标题-2/`），确保目录唯一 |
+
+---
+
+## 成功标准
+
+- [ ] 工作目录创建成功，`$DIR` 路径有效
+- [ ] `content.md` 包含标题、正文、话题标签三部分
+- [ ] `image-plan.md` 包含封面 + N-1 张内容页规划
+- [ ] 封面图 `$DIR/cover.png` 存在且可访问
+- [ ] 所有内容图 `$DIR/image_01.png` ... 存在且可访问
+- [ ] 尾图 `$DIR/tail.png` 存在且可访问
+- [ ] 图片总数 ≥3 张（封面 + 至少 2 张内容图）
+- [ ] 所有图片视觉风格一致（同色系、同字体、同布局风格）
+- [ ] 复刻模式下 `source-analysis.md` 包含源笔记模板分析
+- [ ] 违禁词检查报告生成
+- [ ] 归档成功，最终目录路径报告给用户
+
+---
+
+## 错误处理
+
+**非关键步骤失败**（单张图片生成失败）：重试一次，仍失败则跳过该图继续，在最终报告中标注缺失。
+
+**关键步骤失败**（封面生成）：重试两次（不同 prompt 措辞），仍失败则请求用户协助。
+
+**配置问题**：假定配置已正确设置，不要尝试验证配置。如果 MCP 工具因配置问题失败，直接报告错误信息并继续流程。
+
+## 工作规范
+
+### 文件组织
+
+- 当前运行使用任务工作目录（变量 `$DIR`），完成后按笔记标题归档为 `output/rednote/{标题}/`
+- 图片命名：`$DIR/cover.png`（封面）, `$DIR/image_01.png` ... （内容图）, `$DIR/tail.png`（尾图）
+- 内容草稿：`$DIR/content.md`（含标题/正文/话题标签）
+- 图片规划：`$DIR/image-plan.md`（rednote-visual-design 技能内部产物）
+- 决策记录：`$DIR/topic-analysis.md`（原创模式）或 `$DIR/source-analysis.md`（复刻模式）
+
+### 任务追踪
+
+- 流程启动时用 TaskCreate 创建任务列表
+- 每个任务对应一个流程步骤
+- 开始前：`TaskUpdate status → in_progress`
+- 完成后：`TaskUpdate status → completed`
+- 设置依赖：每个任务 blockedBy 前一个任务
+- 报告进度示例：`[4/6] 图片生成完成 → $DIR/ (5张图片)`
+
+## 执行原则
+
+1. **全程自动**：所有决策点由评分模型或映射规则自动处理，不向用户提问
+2. **质量优先**：宁可多花时间确保内容质量，也不要仓促产出
+3. **透明记录**：决策过程写入文件，不中断流程问用户
+
+## 最佳实践
+
+1. **内容质量优先**：确保 content.md 信息点具体、有收藏价值
+2. **知识化扩展**：情感/体验类主题须扩展为实用干货，增加收藏价值
+3. **决策透明记录**：所有评分、选择、降级决策写入文件，便于追溯
+
+标题规范、视觉风格、违禁词检查等详见各 skill 文档。
+
+---
+
+## 分阶段交付策略
+
+当创作任务复杂时，按以下阶段独立交付：
+
+- **阶段 1 - 选题与内容**：完成选题分析、标题正文、话题标签（`content.md`）
+- **阶段 2 - 图片规划**：完成图片内容规划（`image-plan.md`）
+- **阶段 3 - 图片生成**：完成封面和所有内容图生成
+- **阶段 4 - 合规与归档**：完成违禁词检查、归档整理
+
+每个阶段完成后可独立验证，不依赖后续阶段。

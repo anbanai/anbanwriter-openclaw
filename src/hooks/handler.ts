@@ -1,19 +1,21 @@
 import type { OpenClawPluginApi } from "openclaw/plugin-sdk";
 
 /**
- * Register quality verification hooks for anbanwriter content creation.
+ * Register quality verification and delivery summary hooks for anbanwriter.
  *
- * Listens for after_tool_call events from anbanwriter MCP tools and
- * generates structured delivery summaries.
+ * Listens for after_tool_call events from anbanwriter MCP tools and generates
+ * structured delivery summaries and quality checks matching the claudecode
+ * plugin's SubagentStop and TaskCompleted hooks.
  */
 export function registerQualityHooks(api: OpenClawPluginApi): void {
   api.registerHook("after_tool_call", async (event: any) => {
     const toolName = event?.tool_name ?? "";
+    const toolInput = event?.tool_input ?? {};
+    const toolOutput = event?.tool_output;
 
-    // Only process anbanwriter MCP tools
-    const handled = handleToolComplete(toolName, event?.tool_input ?? {}, event?.tool_output);
-    if (handled && api.logger) {
-      api.logger.info(`[anbanwriter] quality check: ${toolName} completed`);
+    const result = handleToolComplete(toolName, toolInput, toolOutput);
+    if (result && api.logger) {
+      api.logger.info(`[anbanwriter] hook fired: ${toolName} → ${result.substring(0, 50)}...`);
     }
   });
 }
@@ -58,6 +60,136 @@ function summarizeArchive(
   const archivePath = output?.archive_path ?? output?.path ?? input?.name;
   const contentType = input?.content_type ?? "unknown";
 
+  // Route to content-type-specific delivery summary
+  switch (contentType) {
+    case "articles":
+    case "article":
+      return summarizeArticleDelivery(input, output, archivePath);
+    case "rednote":
+      return summarizeRednoteDelivery(input, output, archivePath);
+    case "xls":
+      return summarizeXlsDelivery(input, output, archivePath);
+    case "flower":
+      return summarizeFlowerDelivery(input, output, archivePath);
+    default:
+      return summarizeGenericDelivery(contentType, archivePath);
+  }
+}
+
+function summarizeArticleDelivery(
+  input: Record<string, any>,
+  output: any,
+  archivePath: string
+): string {
+  const lines = [
+    `**微信公众号文章创作完成**`,
+    `- 归档路径：${archivePath}`,
+    ``,
+    `请检查以下产出文件：`,
+    `- `01-research.md` — 选题分析和关键词`,
+    `- `02-outline.md` — 文章大纲`,
+    `- `03-article.md` — 文章初稿`,
+    `- `04-article-final.md` — 最终稿（去AI痕迹、合规检查）`,
+    `- `05-article.html` — 微信 HTML 格式`,
+    `- `cover.png` — 封面图`,
+    `- `images.json` — 配图 CDN 链接`,
+    `- `draft.json` — 草稿信息`,
+    ``,
+    `质量检查要点：`,
+    `- 文章是否有 ≥3 个二级标题`,
+    `- 每个章节是否有配图`,
+    `- 封面图是否生成并上传成功`,
+    `- 草稿是否创建成功`,
+  ];
+
+  return lines.join("\n");
+}
+
+function summarizeRednoteDelivery(
+  input: Record<string, any>,
+  output: any,
+  archivePath: string
+): string {
+  const lines = [
+    `**小红书笔记创作完成**`,
+    `- 归档路径：${archivePath}`,
+    ``,
+    `请检查以下产出文件：`,
+    `- `topic-analysis.md` — 选题分析（原创模式）`,
+    `- `source-analysis.md` — 源笔记分析（复刻模式）`,
+    `- `content.md` — 笔记内容（标题+正文+话题标签）`,
+    `- `image-plan.md` — 图片规划`,
+    `- `cover.png` — 封面图`,
+    `- `image_*.png` — 内容图`,
+    `- `tail.png` — 尾图`,
+    `- `compliance-report.md` — 违禁词合规检查`,
+    ``,
+    `质量检查要点：`,
+    `- 图片数量是否 ≥3 张`,
+    `- 所有图片视觉风格是否一致`,
+    `- content.md 是否包含话题标签`,
+    `- 封面图是否清晰、无马赛克`,
+  ];
+
+  return lines.join("\n");
+}
+
+function summarizeXlsDelivery(
+  input: Record<string, any>,
+  output: any,
+  archivePath: string
+): string {
+  const lines = [
+    `**小绿书图片帖创作完成**`,
+    `- 归档路径：${archivePath}`,
+    ``,
+    `请检查以下产出文件：`,
+    `- 封面图 `cover.png``,
+    `- 内容图 `image_*.png``,
+    ``,
+    `质量检查要点：`,
+    `- 图片数量是否符合配置`,
+    `- 标题是否 ≤32 字符`,
+    `- 所有图片视觉风格是否一致`,
+    `- 封面是否为视觉钩子设计`,
+    `- 内容图每页是否只有一个信息点`,
+    `- 草稿是否创建成功`,
+  ];
+
+  return lines.join("\n");
+}
+
+function summarizeFlowerDelivery(
+  input: Record<string, any>,
+  output: any,
+  archivePath: string
+): string {
+  const lines = [
+    `**鲜花图片生成完成**`,
+    `- 归档路径：${archivePath}`,
+    ``,
+    `请检查以下产出文件：`,
+    `- `flower-research.md` — 花卉调研报告`,
+    `- `prompts.md` — 摄影 prompt 汇总`,
+    `- `flower_*.png` — 生成的花卉图片`,
+    `- `summary.md` — 结果汇总`,
+    ``,
+    `质量检查要点：`,
+    `- 花卉种数是否符合配置`,
+    `- 每个 prompt 是否 ≥150 字`,
+    `- 构图类型是否不重复`,
+    `- 花朵占比是否在 30-60%`,
+    `- 所有图片视觉风格是否一致（统一光线色温、背景 bokeh）`,
+    `- 图片比例是否为 9:16`,
+  ];
+
+  return lines.join("\n");
+}
+
+function summarizeGenericDelivery(
+  contentType: string,
+  archivePath: string
+): string {
   const lines = [
     `**工作目录归档完成**`,
     `- 类型：${contentType}`,
@@ -65,5 +197,5 @@ function summarizeArchive(
     `- 请检查产出文件完整性`,
   ];
 
-  return lines.filter(Boolean).join("\n");
+  return lines.join("\n");
 }
