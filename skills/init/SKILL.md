@@ -21,52 +21,41 @@ user-invocable: true
 
 通过 AskUserQuestion 向用户索取密钥值。
 
-收到后，使用 Write/Edit 工具将密钥写入用户级别的 `~/.claude/settings.json` 的 `env` 字段中：
+收到后，使用 Write/Edit 工具将密钥写入用户常用 shell 配置文件，例如 `~/.zshrc` 或 `~/.bashrc`：
 
-```json
-{
-  "env": {
-    "ANBANWRITER_API_KEY": "<用户提供的密钥>"
-  }
-}
+```bash
+export ANBANWRITER_API_KEY="<用户提供的密钥>"
 ```
 
 **注意**：
-- 如果 `~/.claude/settings.json` 已存在，必须先 Read 读取现有内容，然后用 Edit 合并 `env` 字段，不要覆盖其他已有配置。
-- 如果已有 `env` 对象，只添加 `ANBANWRITER_API_KEY` 字段。
+- 优先复用用户当前实际使用的 shell 配置文件；如果不确定，可先询问用户使用的是 zsh 还是 bash。
+- 如果目标文件已存在，必须先 Read 读取现有内容，再追加 `export ANBANWRITER_API_KEY=...`，不要覆盖其他已有配置。
 - 这是**用户级别**配置，对所有项目生效，无需在每个项目中重复设置。
+- 写入完成后提醒用户执行 `source ~/.zshrc`、`source ~/.bashrc`，或直接重启 OpenClaw。
 
 ## 项目级配置
 
-API Key 设置完成后，提示用户进行项目级配置（写入项目本地的 `.claude/settings.local.json`）。
+API Key 设置完成后，可根据需要提示用户补充项目级环境变量。
 
 ### 服务地址（可选）
 
-如果用户使用的不是默认地址 `http://localhost:8080`（如远程服务器），写入 `ANBANWRITER_API_URL`：
+如果用户需要连接官方在线服务、自建服务或其他非默认地址，可继续写入：
 
-```json
-{
-  "env": {
-    "ANBANWRITER_API_URL": "<用户的服务地址>"
-  }
-}
+```bash
+export ANBANWRITER_API_URL="<用户的服务地址>"
 ```
 
 ### 默认频道（可选）
 
-如果 `list_channels` 返回多个频道，询问用户是否要设置默认频道，写入 `ANBANWRITER_DEFAULT_CHANNEL`：
+如果 `list_channels` 返回多个频道，询问用户是否要设置默认频道，写入：
 
-```json
-{
-  "env": {
-    "ANBANWRITER_DEFAULT_CHANNEL": "<频道 ID>"
-  }
-}
+```bash
+export ANBANWRITER_DEFAULT_CHANNEL="<频道 ID>"
 ```
 
-**项目级配置写入规则**：
-- 写入项目本地 `.claude/settings.local.json`（已被 gitignore，不会提交到仓库）。
-- 如果文件已存在，必须先 Read 读取现有内容，用 Edit 合并 `env` 字段，不覆盖已有配置。
+**补充规则**：
+- 如果这些变量只想在当前机器全局生效，继续写在 shell 配置文件中即可。
+- 如果用户明确只想在当前项目里生效，再根据 OpenClaw 的实际运行方式选择项目局部环境文件，不要默认写入 `.claude/settings.local.json`。
 
 ## 完成
 
