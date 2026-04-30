@@ -52,7 +52,7 @@ user-invocable: true
 ### 步骤 1：获取账号信息
 
 检查环境变量 `ANBANWRITER_DEFAULT_CHANNEL`，若非空则直接使用其值作为 `$CHANNEL_ID`，跳到步骤 2。若为空，调用 MCP 工具：
-- `list_channels()` → 找到 `platform` 为 `xls` 的 channel，记为 `$CHANNEL_ID`
+- `list_channels(platform="xls")` → 获取频道列表。如果只有一个匹配频道，记为 `$CHANNEL_ID`。**如果有多个匹配频道**：根据用户的话题/需求与每个频道的 `name`、`positioning`、`keywords` 进行语义匹配；如果能明确判断最匹配的频道则使用该频道的 `channel_id`；如果无法明确判断，**必须向用户展示所有可选频道**（列出频道名称和定位），让用户选择后继续
 - `get_channel_profile(channel_id="$CHANNEL_ID", scope="xls")` → 获取账号信息（图片数量配置）
 - `list_drafts(channel_id="$CHANNEL_ID")` 和 `list_published_articles(channel_id="$CHANNEL_ID")` → 查看已有内容标题，后续选题避开
 

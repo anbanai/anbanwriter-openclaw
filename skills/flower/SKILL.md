@@ -61,7 +61,7 @@ user-invocable: true
 ### 步骤 2：读取花卉配置
 
 检查环境变量 `ANBANWRITER_DEFAULT_CHANNEL`，若非空则直接使用其值作为 `$CHANNEL_ID`，跳到步骤 3。若为空，调用 MCP 工具：
-- `list_channels()` → 找到 `platform` 为 `flower` 的 channel，记为 `$CHANNEL_ID`
+- `list_channels(platform="flower")` → 获取频道列表。如果只有一个匹配频道，记为 `$CHANNEL_ID`。**如果有多个匹配频道**：根据用户的需求与每个频道的 `name`、`positioning`、`keywords` 进行语义匹配；如果能明确判断最匹配的频道则使用该频道的 `channel_id`；如果无法明确判断，**必须向用户展示所有可选频道**（列出频道名称和定位），让用户选择后继续
 - `get_channel_profile(channel_id="$CHANNEL_ID", scope="flower")` → 获取花卉配置
 
 从输出中提取花卉种数作为 `$COUNT`。若 MCP 工具调用失败或字段不存在，使用默认值 5。
