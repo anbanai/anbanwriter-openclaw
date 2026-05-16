@@ -110,6 +110,18 @@ export ANBANWRITER_API_URL="https://api.creator.anbanai.com"
 - `/seednote`
   种草笔记创作
 
+## 可选：X/Twitter 工作流
+
+如果同一个 OpenClaw 工作区还需要处理 X/Twitter，可以安装 [TweetClaw](https://github.com/Xquik-dev/tweetclaw) 作为独立插件：
+
+```bash
+openclaw plugins install @xquik/tweetclaw
+```
+
+TweetClaw 适合补充 Anbanwriter 之外的 X/Twitter 任务，例如搜索推文和回复、导出关注者、查询用户、上传或下载媒体、发送私信、创建监控、配置 Webhook、运行抽奖，以及在明确审核后发布推文或回复。
+
+建议把 Anbanwriter 用于微信公众号和小红书内容创作，把 TweetClaw 用于 X/Twitter 研究、发布和监控。Xquik API Key 应保存在本地 OpenClaw 配置或环境变量里，不要写进提示词、文章草稿、笔记正文、仓库文件或聊天记录。
+
 ## 遇到问题时先检查
 
 1. 是否已经在 [设置页](https://creator.anbanai.com/settings) 创建并复制了完整 API Key
