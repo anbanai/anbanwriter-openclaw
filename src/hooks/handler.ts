@@ -65,12 +65,8 @@ function summarizeArchive(
     case "articles":
     case "article":
       return summarizeArticleDelivery(input, output, archivePath);
-    case "rednote":
-      return summarizeRednoteDelivery(input, output, archivePath);
-    case "xls":
-      return summarizeXlsDelivery(input, output, archivePath);
-    case "flower":
-      return summarizeFlowerDelivery(input, output, archivePath);
+    case "seednote":
+      return summarizeSeednoteDelivery(input, output, archivePath);
     default:
       return summarizeGenericDelivery(contentType, archivePath);
   }
@@ -105,13 +101,13 @@ function summarizeArticleDelivery(
   return lines.join("\n");
 }
 
-function summarizeRednoteDelivery(
+function summarizeSeednoteDelivery(
   input: Record<string, any>,
   output: any,
   archivePath: string
 ): string {
   const lines = [
-    `**小红书笔记创作完成**`,
+    `**种草笔记创作完成**`,
     `- 归档路径：${archivePath}`,
     ``,
     `请检查以下产出文件：`,
@@ -129,58 +125,6 @@ function summarizeRednoteDelivery(
     `- 所有图片视觉风格是否一致`,
     `- content.md 是否包含话题标签`,
     `- 封面图是否清晰、无马赛克`,
-  ];
-
-  return lines.join("\n");
-}
-
-function summarizeXlsDelivery(
-  input: Record<string, any>,
-  output: any,
-  archivePath: string
-): string {
-  const lines = [
-    `**小绿书图片帖创作完成**`,
-    `- 归档路径：${archivePath}`,
-    ``,
-    `请检查以下产出文件：`,
-    `- 封面图 `cover.png``,
-    `- 内容图 `image_*.png``,
-    ``,
-    `质量检查要点：`,
-    `- 图片数量是否符合配置`,
-    `- 标题是否 ≤32 字符`,
-    `- 所有图片视觉风格是否一致`,
-    `- 封面是否为视觉钩子设计`,
-    `- 内容图每页是否只有一个信息点`,
-    `- 草稿是否创建成功`,
-  ];
-
-  return lines.join("\n");
-}
-
-function summarizeFlowerDelivery(
-  input: Record<string, any>,
-  output: any,
-  archivePath: string
-): string {
-  const lines = [
-    `**鲜花图片生成完成**`,
-    `- 归档路径：${archivePath}`,
-    ``,
-    `请检查以下产出文件：`,
-    `- `flower-research.md` — 花卉调研报告`,
-    `- `prompts.md` — 摄影 prompt 汇总`,
-    `- `flower_*.png` — 生成的花卉图片`,
-    `- `summary.md` — 结果汇总`,
-    ``,
-    `质量检查要点：`,
-    `- 花卉种数是否符合配置`,
-    `- 每个 prompt 是否 ≥150 字`,
-    `- 构图类型是否不重复`,
-    `- 花朵占比是否在 30-60%`,
-    `- 所有图片视觉风格是否一致（统一光线色温、背景 bokeh）`,
-    `- 图片比例是否为 9:16`,
   ];
 
   return lines.join("\n");

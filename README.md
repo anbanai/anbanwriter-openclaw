@@ -1,6 +1,6 @@
 # Anban 智能创作助手 OpenClaw 插件
 
-> 微信公众号 & 小红书 AI 内容创作插件，支持 OpenClaw 平台的原生插件集成。
+> 微信公众号 & 种草笔记 AI 内容创作插件，支持 OpenClaw 平台的原生插件集成。
 
 ## 接入流程
 
@@ -89,9 +89,7 @@ export ANBANWRITER_API_URL="https://api.creator.anbanai.com"
 
 ```text
 /article AI Agent 入门指南
-/rednote 降噪耳机种草笔记
-/xls 春日穿搭图片帖
-/flower 春日鲜花摄影
+/seednote 降噪耳机种草笔记
 ```
 
 ### 方式二：自然语言
@@ -100,9 +98,7 @@ export ANBANWRITER_API_URL="https://api.creator.anbanai.com"
 
 ```text
 帮我写一篇关于 AI Agent 的公众号文章
-小红书种草笔记，主题是降噪耳机
-小绿书图片帖，主题是春日穿搭
-帮我生成一组郁金香的鲜花图片
+种草笔记种草笔记，主题是降噪耳机
 ```
 
 ## 常用命令
@@ -111,12 +107,8 @@ export ANBANWRITER_API_URL="https://api.creator.anbanai.com"
   初始化配置并验证连接
 - `/article`
   公众号图文创作
-- `/rednote`
-  小红书笔记创作
-- `/xls`
-  小绿书图片帖创作
-- `/flower`
-  鲜花图片创作
+- `/seednote`
+  种草笔记创作
 
 ## 遇到问题时先检查
 
@@ -130,9 +122,7 @@ export ANBANWRITER_API_URL="https://api.creator.anbanai.com"
 | 引擎 | 触发关键词 | 说明 |
 |-------|-----------|------|
 | wechat-article | "写文章"、"写一篇"、"发文章" | 微信公众号图文（选题研究 → AI 写作 → 去痕优化 → SEO → 封面配图 → 草稿发布） |
-| wechat-xls | "小绿书"、"图片帖"、"newspic" | 微信图片帖（选题研究 → 视觉风格 → 图片生成 → 草稿发布） |
-| rednote | "小红书"、"种草"、"仿写" | 小红书图文（选题研究 → 内容创作 → 封面 + 配图 → 合规 → 归档） |
-| flower | "鲜花"、"花卉图片" | 鲜花图片生成（花卉研究 → 提示词 → 批量生成 → 总结） |
+| seednote | "种草笔记"、"种草"、"仿写" | 种草笔记图文（选题研究 → 内容创作 → 封面 + 配图 → 合规 → 归档） |
 
 ## 开发
 
