@@ -10,10 +10,10 @@ import { join } from "node:path";
  * plugin's SubagentStop and TaskCompleted hooks.
  */
 export function registerQualityHooks(api: OpenClawPluginApi): void {
-  api.registerHook("after_tool_call", async (event: any) => {
-    const toolName = event?.tool_name ?? "";
-    const toolInput = event?.tool_input ?? {};
-    const toolOutput = event?.tool_output;
+  api.on("after_tool_call", (event) => {
+    const toolName = event.toolName;
+    const toolInput = event.params;
+    const toolOutput = event.result;
 
     const result = handleToolComplete(toolName, toolInput, toolOutput);
     if (result && api.logger) {
@@ -111,14 +111,14 @@ function summarizeArticleDelivery(
     `- 归档路径：${archivePath}`,
     ``,
     `请检查以下产出文件：`,
-    "- `01-research.md` — 选题分析和关键词",
-    "- `02-outline.md` — 文章大纲",
-    "- `03-article.md` — 文章初稿",
-    "- `04-article-final.md` — 最终稿（去AI痕迹、合规检查）",
-    "- `05-article.html` — 微信 HTML 格式",
-    hasCover ? "- `cover.png` — 封面图" : "- `cover.png` — 封面图（封面开关关闭时可不存在）",
-    hasContentImages ? "- `images.json` — 配图 CDN 链接（含 vision 校验记录）" : "- `images.json` — 配图记录（正文配图关闭时可不存在）",
-    "- `draft.json` — 草稿信息",
+    "- `01-research.md` - 选题分析和关键词",
+    "- `02-outline.md` - 文章大纲",
+    "- `03-article.md` - 文章初稿",
+    "- `04-article-final.md` - 最终稿（去AI痕迹、合规检查）",
+    "- `05-article.html` - 微信 HTML 格式",
+    hasCover ? "- `cover.png` - 封面图" : "- `cover.png` - 封面图（封面开关关闭时可不存在）",
+    hasContentImages ? "- `images.json` - 配图 CDN 链接（含 vision 校验记录）" : "- `images.json` - 配图记录（正文配图关闭时可不存在）",
+    "- `draft.json` - 草稿信息",
     ``,
     `质量检查要点：`,
     `- 文章是否有 ≥3 个二级标题`,
@@ -314,14 +314,14 @@ function summarizeSeednoteDelivery(
     `- 归档路径：${archivePath}`,
     ``,
     `请检查以下产出文件：`,
-    "- `topic-analysis.md` — 选题分析（原创模式）",
-    "- `source-analysis.md` — 源笔记分析（复刻模式）",
-    "- `content.md` — 笔记内容（标题+正文+话题标签）",
-    "- `image-plan.md` — 图片规划",
-    "- `cover.png` — 封面图",
-    "- `image_*.png` — 内容图",
-    "- `tail.png` — 尾图",
-    "- `compliance-report.md` — 违禁词合规检查",
+    "- `topic-analysis.md` - 选题分析（原创模式）",
+    "- `source-analysis.md` - 源笔记分析（复刻模式）",
+    "- `content.md` - 笔记内容（标题+正文+话题标签）",
+    "- `image-plan.md` - 图片规划",
+    "- `cover.png` - 封面图",
+    "- `image_*.png` - 内容图",
+    "- `tail.png` - 尾图",
+    "- `compliance-report.md` - 违禁词合规检查",
     ``,
     `质量检查要点：`,
     `- 图片数量是否等于 image-plan.md 「计划图片数量」声明值，内容图是否 ≤ 3 张`,
@@ -384,14 +384,14 @@ function summarizeEcommerceDelivery(
     `- 归档路径：${archivePath}`,
     ``,
     `请检查以下产出文件：`,
-    "- `product-bible.md` — 产品档案（品类/品牌/色彩/材质/形状/包装文字/卖点 + 锚点 $ANCHOR_REF）",
-    "- `copywriting.md` — 卖点文案（排序卖点 / 主图文案 / 详情 FABE）",
-    "- `asset-plan.md` — 资产规划（已选模块 + 各模块图片数量）",
-    "- `main_01..05.png` — 主图（必选）",
-    "- `detail_*.png` / `cover_*.png` / `share_*.png` / `sku_*.png` — 按已选模块产出",
-    "- `best-refs.md` — 一致性自检（逐图 provider / verify_with_vision 结果）",
-    "- `compliance-report.md` — 广告法极限词/违禁词合规",
-    "- `manifest.json` — 交付清单（按模块含文件名/尺寸/provider/自检/合规）",
+    "- `product-bible.md` - 产品档案（品类/品牌/色彩/材质/形状/包装文字/卖点 + 锚点 $ANCHOR_REF）",
+    "- `copywriting.md` - 卖点文案（排序卖点 / 主图文案 / 详情 FABE）",
+    "- `asset-plan.md` - 资产规划（已选模块 + 各模块图片数量）",
+    "- `main_01..05.png` - 主图（必选）",
+    "- `detail_*.png` / `cover_*.png` / `share_*.png` / `sku_*.png` - 按已选模块产出",
+    "- `best-refs.md` - 一致性自检（逐图 provider / verify_with_vision 结果）",
+    "- `compliance-report.md` - 广告法极限词/违禁词合规",
+    "- `manifest.json` - 交付清单（按模块含文件名/尺寸/provider/自检/合规）",
     ``,
     `质量检查要点：`,
     `- 产品跨图视觉一致性（logo / 主色 / 形状）`,
@@ -407,7 +407,7 @@ function summarizeEcommerceDelivery(
 
 // Best-effort file checks for the seednote artifact gate.
 // existsSync/readdirSync only throw on permission errors or invalid args;
-// missing files return false / empty array. We deliberately don't catch —
+// missing files return false / empty array. We deliberately don't catch -
 // if the plugin host lacks fs access, the warning is the least of our problems.
 function hasFile(dir: string, name: string): boolean {
   return existsSync(join(dir, name));
